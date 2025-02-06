@@ -9,7 +9,6 @@ import os
 import re
 
 
-
 class WxParam:
     SYS_TEXT_HEIGHT = 33
     TIME_TEXT_HEIGHT = 34
@@ -17,6 +16,7 @@ class WxParam:
     CHAT_TEXT_HEIGHT = 52
     CHAT_IMG_HEIGHT = 117
     DEFALUT_SAVEPATH = os.path.join(os.getcwd(), 'wxauto文件')
+
 
 class WeChatBase:
     def _lang(self, text, langtype='MAIN'):
@@ -48,9 +48,10 @@ class WeChatBase:
                     else:
                         break
                 winrect = MsgItem.BoundingRectangle
-                mid = (winrect.left + winrect.right)/2
+                mid = (winrect.left + winrect.right) / 2
                 if User.BoundingRectangle.left < mid:
-                    if MsgItem.TextControl().Exists(0.1) and MsgItem.TextControl().BoundingRectangle.top < User.BoundingRectangle.top:
+                    if MsgItem.TextControl().Exists(
+                            0.1) and MsgItem.TextControl().BoundingRectangle.top < User.BoundingRectangle.top:
                         name = (User.Name, MsgItem.TextControl().Name)
                     else:
                         name = (User.Name, User.Name)
@@ -61,7 +62,7 @@ class WeChatBase:
                 Msg = ['SYS', MsgItemName, ''.join([str(i) for i in MsgItem.GetRuntimeId()])]
         uia.SetGlobalSearchTimeout(10.0)
         return ParseMessage(Msg, MsgItem, self)
-    
+
     def _getmsgs(self, msgitems, savepic=False, savefile=False, savevoice=False):
         msgs = []
         for MsgItem in msgitems:
@@ -91,7 +92,7 @@ class WeChatBase:
                 msg.content = voice_text if voice_text else msg.content
             msg.info[1] = msg.content
         return msgs
-    
+
     def _download_pic(self, msgitem):
         self._show()
         imgcontrol = msgitem.ButtonControl(Name='')
@@ -109,7 +110,7 @@ class WeChatBase:
         # msgs = []
         # for MsgItem in msgitems:
         #     msgs.append(self._split(MsgItem))
-        
+
         filecontrol = msgitem.ButtonControl(Name='')
         if not filecontrol.Exists(0.5):
             return None
@@ -129,7 +130,7 @@ class WeChatBase:
             accept_button = filewin.ButtonControl(Name='接收文件')
             if accept_button.Exists(2):
                 accept_button.Click(simulateMove=False)
-            
+
             while True:
                 try:
                     filecontrol = msgitem.ButtonControl(Name='')
@@ -187,7 +188,7 @@ class ChatWnd(WeChatBase):
         self.C_MsgList = self.UiaAPI.ListControl()
         self.GetAllMessage()
 
-        self.savepic = False   # 该参数用于在自动监听的情况下是否自动保存聊天图片
+        self.savepic = False  # 该参数用于在自动监听的情况下是否自动保存聊天图片
 
     def __repr__(self) -> str:
         return f"<wxauto Chat Window at {hex(id(self))} for {self.who}>"
@@ -237,7 +238,7 @@ class ChatWnd(WeChatBase):
             if isinstance(at, str):
                 at = [at]
             for i in at:
-                self.editbox.SendKeys('@'+i)
+                self.editbox.SendKeys('@' + i)
                 atwnd = self.UiaAPI.PaneControl(ClassName='ChatContactMenu')
                 if atwnd.Exists(maxSearchSeconds=0.1):
                     atwnd.SendKeys('{ENTER}')
@@ -280,7 +281,7 @@ class ChatWnd(WeChatBase):
         else:
             Warnings.lightred(f'filepath参数格式错误：{type(filepath)}，应为str、list、tuple、set格式', stacklevel=2)
             return False
-        
+
         if filelist:
             self._show()
             self.editbox.SendKeys('{Ctrl}a', waitTime=0)
@@ -298,7 +299,7 @@ class ChatWnd(WeChatBase):
         else:
             Warnings.lightred('所有文件都无法成功发送', stacklevel=2)
             return False
-        
+
     def GetAllMessage(self, savepic=False, savefile=False, savevoice=False):
         '''获取当前窗口中加载的所有聊天记录
         
@@ -314,7 +315,7 @@ class ChatWnd(WeChatBase):
         MsgItems = self.C_MsgList.GetChildren()
         msgs = self._getmsgs(MsgItems, savepic, savefile, savevoice)
         return msgs
-    
+
     def GetNewMessage(self, savepic=False, savefile=False, savevoice=False):
         '''获取当前窗口中加载的新聊天记录
 
@@ -340,7 +341,6 @@ class ChatWnd(WeChatBase):
         #     newmsgs = newmsgs[1:]
         return newmsgs
 
-    
     def LoadMoreMessage(self):
         """加载当前聊天页面更多聊天信息
         
@@ -379,7 +379,7 @@ class ChatWnd(WeChatBase):
             rect = ele.BoundingRectangle
             Click(rect)
         except:
-            return 
+            return
         finally:
             uia.SetGlobalSearchTimeout(10)
         roominfoWnd = self.UiaAPI.WindowControl(ClassName='SessionChatRoomDetailWnd', searchDepth=1)
@@ -398,13 +398,14 @@ class ChatWnd(WeChatBase):
         roominfoWnd.SendKeys('{Esc}')
         return members
 
+
 class WeChatImage:
     def __init__(self, language='cn') -> None:
         self.language = language
         self.api = uia.WindowControl(ClassName='ImagePreviewWnd', searchDepth=1)
         MainControl1 = [i for i in self.api.GetChildren() if not i.ClassName][0]
         self.ToolsBox, self.PhotoBox = MainControl1.GetChildren()
-        
+
         # tools按钮
         self.t_previous = self.ToolsBox.ButtonControl(Name=self._lang('上一张'))
         self.t_next = self.ToolsBox.ButtonControl(Name=self._lang('下一张'))
@@ -416,15 +417,15 @@ class WeChatImage:
 
     def __repr__(self) -> str:
         return f"<wxauto WeChat Image at {hex(id(self))}>"
-    
+
     def _lang(self, text):
         return IMAGE_LANGUAGE[text][self.language]
-    
+
     def _show(self):
         HWND = FindWindow(classname='ImagePreviewWnd')
         win32gui.ShowWindow(HWND, 1)
         self.api.SwitchToThisWindow()
-        
+
     def OCR(self):
         result = ''
         ctrls = self.PhotoBox.GetChildren()
@@ -438,7 +439,6 @@ class WeChatImage:
             result = TranslateControl.TextControl().Name
         return result
 
-    
     def Save(self, savepath='', timeout=10):
         """保存图片
 
@@ -449,12 +449,13 @@ class WeChatImage:
         Returns:
             str: 文件保存路径，即savepath
         """
-        
+
         if not savepath:
-            savepath = os.path.join(WxParam.DEFALUT_SAVEPATH, f"微信图片_{datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')}.jpg")
+            savepath = os.path.join(WxParam.DEFALUT_SAVEPATH,
+                                    f"微信图片_{datetime.datetime.now().strftime('%Y%m%d%H%M%S%f')}.jpg")
         if not os.path.exists(os.path.split(savepath)[0]):
             os.makedirs(os.path.split(savepath)[0])
-            
+
         if self.t_zoom.Exists(maxSearchSeconds=5):
             self.t_save.Click(simulateMove=False)
         else:
@@ -480,7 +481,7 @@ class WeChatImage:
         win32gui.SendMessage(edithandle, win32con.WM_SETTEXT, '', str(savepath))
         win32gui.SendMessage(savehandle, win32con.BM_CLICK, 0, 0)
         return savepath
-        
+
     def Previous(self):
         """上一张"""
         if self.t_previous.IsKeyboardFocusable:
@@ -490,7 +491,7 @@ class WeChatImage:
         else:
             Warnings.lightred('上一张按钮不可用', stacklevel=2)
             return False
-        
+
     def Next(self, warning=True):
         """下一张"""
         if self.t_next.IsKeyboardFocusable:
@@ -501,11 +502,12 @@ class WeChatImage:
             if warning:
                 Warnings.lightred('已经是最新的图片了', stacklevel=2)
             return False
-        
+
     def Close(self):
         self._show()
         self.api.SendKeys('{Esc}')
-    
+
+
 class TextElement:
     def __init__(self, ele, wx) -> None:
         self._wx = wx
@@ -523,7 +525,7 @@ class TextElement:
             self.chattype = 'group'
             numtext = re.findall(' \(\d+\)', chatname)[-1]
             self.chatname = chatname[:-len(numtext)]
-            
+
         self.info = {
             'sender': self.sender.Name,
             'content': self.content,
@@ -534,6 +536,7 @@ class TextElement:
 
     def __repr__(self) -> str:
         return f"<wxauto Text Element at {hex(id(self))} ({self.sender.Name}: {self.content})>"
+
 
 class NewFriendsElement:
     def __init__(self, ele, wx):
@@ -567,7 +570,7 @@ class NewFriendsElement:
             remarkedit.Click(simulateMove=False)
             remarkedit.SendKeys('{Ctrl}a', waitTime=0)
             remarkedit.SendKeys(remark)
-        
+
         if tags:
             tagedit = NewFriendsWnd.TextControl(Name='标签').GetParentControl().EditControl()
             for tag in tags:
@@ -581,7 +584,8 @@ class NewFriendsElement:
 class ContactWnd:
     def __init__(self):
         self.UiaAPI = uia.WindowControl(ClassName='ContactManagerWindow', searchDepth=1)
-        self.Sidebar, _, self.ContactBox = self.UiaAPI.PaneControl(ClassName='', searchDepth=3, foundIndex=3).GetChildren()
+        self.Sidebar, _, self.ContactBox = self.UiaAPI.PaneControl(ClassName='', searchDepth=3,
+                                                                   foundIndex=3).GetChildren()
 
     def __repr__(self) -> str:
         return f"<wxauto Contact Window at {hex(id(self))}>"
@@ -598,7 +602,7 @@ class ContactWnd:
         wxlog.debug('获取好友人数')
         numText = self.Sidebar.PaneControl(Name='全部').TextControl(foundIndex=2).Name
         return int(re.findall('\d+', numText)[0])
-    
+
     def Search(self, keyword):
         """搜索好友
 
@@ -633,7 +637,7 @@ class ContactWnd:
             self.ContactBox.WheelDown(wheelTimes=5, waitTime=0.1)
             if bottom == self.ContactBox.ListControl().GetChildren()[-1].BoundingRectangle.top:
                 return contacts_list
-    
+
     def Close(self):
         """关闭联系人窗口"""
         wxlog.debug('关闭联系人窗口')
@@ -650,7 +654,7 @@ class ContactElement:
 
     def __repr__(self) -> str:
         return f"<wxauto Contact Element at {hex(id(self))} ({self.nickname}: {self.remark})>"
-    
+
     def EditRemark(self, remark: str):
         """修改好友备注名
         
@@ -662,15 +666,15 @@ class ContactElement:
         self.element.SendKeys('{Ctrl}a')
         self.element.SendKeys(remark)
         self.element.SendKeys('{Enter}')
-        
+
 
 class SessionElement:
     def __init__(self, item):
-        self.name = item.GetProgenyControl(4, control_type='TextControl').Name\
+        self.name = item.GetProgenyControl(4, control_type='TextControl').Name \
             if item.GetProgenyControl(4, control_type='TextControl') else None
-        self.time = item.GetProgenyControl(4, 1, control_type='TextControl').Name\
+        self.time = item.GetProgenyControl(4, 1, control_type='TextControl').Name \
             if item.GetProgenyControl(4, 1, control_type='TextControl') else None
-        self.content = item.GetProgenyControl(4, 2, control_type='TextControl').Name\
+        self.content = item.GetProgenyControl(4, 2, control_type='TextControl').Name \
             if item.GetProgenyControl(4, 2, control_type='TextControl') else None
         self.isnew = item.GetProgenyControl(2, 2) is not None
         wxlog.debug(f"============== 【{self.name}】 ==============")
@@ -684,17 +688,17 @@ class Message:
 
     def __getitem__(self, index):
         return self.info[index]
-    
+
     def __str__(self):
         return self.content
-    
+
     def __repr__(self):
         return str(self.info[:2])
-    
+
 
 class SysMessage(Message):
     type = 'sys'
-    
+
     def __init__(self, info, control, wx):
         self.info = info
         self.control = control
@@ -703,14 +707,14 @@ class SysMessage(Message):
         self.content = info[1]
         self.id = info[-1]
         wxlog.debug(f"【系统消息】{self.content}")
-    
+
     # def __repr__(self):
     #     return f'<wxauto SysMessage at {hex(id(self))}>'
-    
+
 
 class TimeMessage(Message):
     type = 'time'
-    
+
     def __init__(self, info, control, wx):
         self.info = info
         self.control = control
@@ -720,14 +724,14 @@ class TimeMessage(Message):
         self.content = info[1]
         self.id = info[-1]
         wxlog.debug(f"【时间消息】{self.time}")
-    
+
     # def __repr__(self):
     #     return f'<wxauto TimeMessage at {hex(id(self))}>'
-    
+
 
 class RecallMessage(Message):
     type = 'recall'
-    
+
     def __init__(self, info, control, wx):
         self.info = info
         self.control = control
@@ -736,14 +740,14 @@ class RecallMessage(Message):
         self.content = info[1]
         self.id = info[-1]
         wxlog.debug(f"【撤回消息】{self.content}")
-    
+
     # def __repr__(self):
     #     return f'<wxauto RecallMessage at {hex(id(self))}>'
-    
+
 
 class SelfMessage(Message):
     type = 'self'
-    
+
     def __init__(self, info, control, obj):
         self.info = info
         self.control = control
@@ -753,7 +757,7 @@ class SelfMessage(Message):
         self.id = info[-1]
         self.chatbox = obj.ChatBox if hasattr(obj, 'ChatBox') else obj.UiaAPI
         wxlog.debug(f"【自己消息】{self.content}")
-    
+
     # def __repr__(self):
     #     return f'<wxauto SelfMessage at {hex(id(self))}>'
 
@@ -768,9 +772,10 @@ class SelfMessage(Message):
         """
         wxlog.debug(f'发送引用消息：{msg}  --> {self.sender} | {self.content}')
         self._winobj._show()
-        headcontrol = [i for i in self.control.GetFirstChildControl().GetChildren() if i.ControlTypeName == 'ButtonControl'][0]
+        headcontrol = \
+        [i for i in self.control.GetFirstChildControl().GetChildren() if i.ControlTypeName == 'ButtonControl'][0]
         RollIntoView(self.chatbox.ListControl(), headcontrol, equal=True)
-        xbias = int(headcontrol.BoundingRectangle.width()*1.5)
+        xbias = int(headcontrol.BoundingRectangle.width() * 1.5)
         headcontrol.RightClick(x=-xbias, simulateMove=False)
         menu = self._winobj.UiaAPI.MenuControl(ClassName='CMenuWnd')
         quote_option = menu.MenuItemControl(Name="引用")
@@ -789,7 +794,7 @@ class SelfMessage(Message):
                 break
         editbox.SendKeys('{Enter}')
         return True
-    
+
     def forward(self, friend):
         """转发该消息
         
@@ -798,17 +803,19 @@ class SelfMessage(Message):
         
         Returns:
             bool: 是否成功转发
+            :param again: 再次尝试
         """
         wxlog.debug(f'转发消息：{self.sender} --> {friend} | {self.content}')
         self._winobj._show()
         headcontrol = [i for i in self.control.GetFirstChildControl().GetChildren() if i.ControlTypeName == 'ButtonControl'][0]
         RollIntoView(self.chatbox.ListControl(), headcontrol, equal=True)
-        xbias = int(headcontrol.BoundingRectangle.width()*1.5)
+        xbias = int(headcontrol.BoundingRectangle.width() * 1.5)
         headcontrol.RightClick(x=-xbias, simulateMove=False)
         menu = self._winobj.UiaAPI.MenuControl(ClassName='CMenuWnd')
         forward_option = menu.MenuItemControl(Name="转发...")
         if not forward_option.Exists(maxSearchSeconds=0.1):
             wxlog.debug('该消息当前状态无法转发')
+            headcontrol.Click(x=-xbias, simulateMove=False)
             return False
         forward_option.Click(simulateMove=False)
         SetClipboardText(friend)
@@ -823,14 +830,15 @@ class SelfMessage(Message):
         else:
             contactwnd.SendKeys('{Esc}')
             raise FriendNotFoundError(f'未找到好友：{friend}')
-    
+
     def parse(self):
         """解析合并消息内容，当且仅当消息内容为合并转发的消息时有效"""
         wxlog.debug(f'解析合并消息内容：{self.sender} | {self.content}')
         self._winobj._show()
-        headcontrol = [i for i in self.control.GetFirstChildControl().GetChildren() if i.ControlTypeName == 'ButtonControl'][0]
+        headcontrol = \
+        [i for i in self.control.GetFirstChildControl().GetChildren() if i.ControlTypeName == 'ButtonControl'][0]
         RollIntoView(self.chatbox.ListControl(), headcontrol, equal=True)
-        xbias = int(headcontrol.BoundingRectangle.width()*1.5)
+        xbias = int(headcontrol.BoundingRectangle.width() * 1.5)
         headcontrol.Click(x=-xbias, simulateMove=False)
         chatrecordwnd = uia.WindowControl(ClassName='ChatRecordWnd', searchDepth=1)
         msgitems = chatrecordwnd.ListControl().GetChildren()
@@ -847,9 +855,10 @@ class SelfMessage(Message):
         chatrecordwnd.SendKeys('{Esc}')
         return msgs
 
+
 class FriendMessage(Message):
     type = 'friend'
-    
+
     def __init__(self, info, control, obj):
         self.info = info
         self.control = control
@@ -864,7 +873,7 @@ class FriendMessage(Message):
             wxlog.debug(f"【好友消息】{self.sender}: {self.content}")
         else:
             wxlog.debug(f"【好友消息】{self.sender}({self.sender_remark}): {self.content}")
-    
+
     # def __repr__(self):
     #     return f'<wxauto FriendMessage at {hex(id(self))}>'
 
@@ -879,9 +888,10 @@ class FriendMessage(Message):
         """
         wxlog.debug(f'发送引用消息：{msg}  --> {self.sender} | {self.content}')
         self._winobj._show()
-        headcontrol = [i for i in self.control.GetFirstChildControl().GetChildren() if i.ControlTypeName == 'ButtonControl'][0]
+        headcontrol = \
+        [i for i in self.control.GetFirstChildControl().GetChildren() if i.ControlTypeName == 'ButtonControl'][0]
         RollIntoView(self.chatbox.ListControl(), headcontrol, equal=True)
-        xbias = int(headcontrol.BoundingRectangle.width()*1.5)
+        xbias = int(headcontrol.BoundingRectangle.width() * 1.5)
         headcontrol.RightClick(x=xbias, simulateMove=False)
         menu = self._winobj.UiaAPI.MenuControl(ClassName='CMenuWnd')
         quote_option = menu.MenuItemControl(Name="引用")
@@ -900,7 +910,7 @@ class FriendMessage(Message):
                 break
         editbox.SendKeys('{Enter}')
         return True
-    
+
     def forward(self, friend):
         """转发该消息
         
@@ -912,9 +922,10 @@ class FriendMessage(Message):
         """
         wxlog.debug(f'转发消息：{self.sender} --> {friend} | {self.content}')
         self._winobj._show()
-        headcontrol = [i for i in self.control.GetFirstChildControl().GetChildren() if i.ControlTypeName == 'ButtonControl'][0]
+        headcontrol = \
+        [i for i in self.control.GetFirstChildControl().GetChildren() if i.ControlTypeName == 'ButtonControl'][0]
         RollIntoView(self.chatbox.ListControl(), headcontrol, equal=True)
-        xbias = int(headcontrol.BoundingRectangle.width()*1.5)
+        xbias = int(headcontrol.BoundingRectangle.width() * 1.5)
         headcontrol.RightClick(x=xbias, simulateMove=False)
         menu = self._winobj.UiaAPI.MenuControl(ClassName='CMenuWnd')
         forward_option = menu.MenuItemControl(Name="转发...")
@@ -934,14 +945,15 @@ class FriendMessage(Message):
         else:
             contactwnd.SendKeys('{Esc}')
             raise FriendNotFoundError(f'未找到好友：{friend}')
-    
+
     def parse(self):
         """解析合并消息内容，当且仅当消息内容为合并转发的消息时有效"""
         wxlog.debug(f'解析合并消息内容：{self.sender} | {self.content}')
         self._winobj._show()
-        headcontrol = [i for i in self.control.GetFirstChildControl().GetChildren() if i.ControlTypeName == 'ButtonControl'][0]
+        headcontrol = \
+        [i for i in self.control.GetFirstChildControl().GetChildren() if i.ControlTypeName == 'ButtonControl'][0]
         RollIntoView(self.chatbox.ListControl(), headcontrol, equal=True)
-        xbias = int(headcontrol.BoundingRectangle.width()*1.5)
+        xbias = int(headcontrol.BoundingRectangle.width() * 1.5)
         headcontrol.Click(x=xbias, simulateMove=False)
         chatrecordwnd = uia.WindowControl(ClassName='ChatRecordWnd', searchDepth=1)
         msgitems = chatrecordwnd.ListControl().GetChildren()
@@ -959,13 +971,13 @@ class FriendMessage(Message):
         return msgs
 
 
-
 message_types = {
     'SYS': SysMessage,
     'Time': TimeMessage,
     'Recall': RecallMessage,
     'Self': SelfMessage
 }
+
 
 def ParseMessage(data, control, wx):
     return message_types.get(data[0], FriendMessage)(data, control, wx)
